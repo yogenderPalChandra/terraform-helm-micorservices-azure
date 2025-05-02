@@ -1,0 +1,86 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgres
+  namespace: db
+spec:
+  selector:
+    matchLabels:
+      app: postgres
+  serviceName: "postgres"
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      terminationGracePeriodSeconds: 30
+      initContainers:
+      - name: init
+        image: busybox:1.28
+        command: [ "sh", "-c" ]
+        args:
+        - |
+          #create archive directory
+          mkdir -p /data/archive
+        volumeMounts:
+        - name: data
+          mountPath: /data
+          readOnly: false
+        # Resource requests and limits for initContainer
+        resources:
+          requests:
+            memory: "64Mi"   # Request 64 MiB of memory
+            cpu: "50m"       # Request 50 milliCPU (0.05 CPU cores)
+          limits:
+            memory: "128Mi"  # Limit to 128 MiB of memory
+            cpu: "100m"      # Limit to 100 milliCPU (0.1 CPU cores)
+      containers:
+      - name: postgres
+        image: yogender027/postgrestemdb-image:1.0.0
+        args: ["-c", "config_file=/config/postgresql.conf"]
+        ports:
+        - containerPort: 5432
+          name: database
+        env:
+        - name: PGDATA
+          value: "/data/pgdata"
+        - name: POSTGRES_USER
+          valueFrom:
+            secretKeyRef:
+              name: postgresql
+              key: POSTGRES_USER
+              optional: false
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: postgresql
+              key: POSTGRES_PASSWORD
+              optional: false
+        - name: POSTGRES_DB
+          valueFrom:
+            secretKeyRef:
+              name: postgresql
+              key: POSTGRES_DB
+              optional: false
+        volumeMounts:
+        - name: config
+          mountPath: /config
+          readOnly: false
+        - name: data
+          mountPath: /data
+          readOnly: false
+        resources:
+          requests:
+            memory: "512Mi"  # Request 512 MiB of memory
+            cpu: "500m"      # Request 500 milliCPU (0.5 CPU cores)
+          limits:
+            memory: "1Gi"    # Limit to 1 GiB of memory
+            cpu: "1"         # Limit to 1 CPU core
+      volumes:
+      - name: config
+        configMap:
+          name: postgres
+          defaultMode: 0755
+      - name: data
+        emptyDir: {}
