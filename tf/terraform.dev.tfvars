@@ -1,4 +1,4 @@
-subscription_id     = "f9fc7df4-eb90-47d1-ac35-5986b6ea2163"
+subscription_id     = "f789789dd-hj67-489ui-jk78-hjk7896hjjkk789"
 resource_group_name = "yogi-dev-aks-rg"
 location            = "germanywestcentral"
 cluster_name        = "yogi-dev-aks-cluster"
